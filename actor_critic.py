@@ -1,6 +1,5 @@
-# A deep actor-critic reinforcement learning model
-# DDPG (Deep Deterministic Policy Gradient algorithm)
-# realization by Alexey Barashkov,
+# A realization of a deep actor-critic reinforcement learning algorithm
+# DDPG (Deep Deterministic Policy Gradient) by Alexey Barashkov,
 # master student of Moscow Technological University (MIREA)
 import tensorflow as tf
 import numpy as np
@@ -60,7 +59,7 @@ class Actor(object):
             else:
                 w = tf.Variable(np.random.normal(0, 1, (self.NEURONS_N[i - 1], self.NEURONS_N[i])), dtype=tf.float64)
             self.weights.append(w)
-            b = tf.Variable(np.zeros(1, self.NEURONS_N[i]), dtype=tf.float64)
+            b = tf.Variable(np.zeros((1, self.NEURONS_N[i])), dtype=tf.float64)
             self.biases.append(b)
         self._construct_computations(depth=len(self.NEURONS_N))  # Build computational graph
 
@@ -148,7 +147,7 @@ class Critic(object):
             else:  # Subsequent layers weights
                 w = tf.Variable(np.random.normal(0, 1, (self.NEURONS_N[i - 1], self.NEURONS_N[i])), dtype=tf.float64)
             self.weights.append(w)
-            b = tf.Variable(np.zeros(1, self.NEURONS_N[i]), dtype=tf.float64)
+            b = tf.Variable(np.zeros((1, self.NEURONS_N[i])), dtype=tf.float64)
             self.biases.append(b)
         self._construct_computations(depth=len(self.NEURONS_N))   # Build computational graph
 
@@ -264,7 +263,7 @@ class ActorCritic(object):
         self.replay_memory = deque(maxlen=100000)  # History
         self.EPS_GREEDY = True  # Make random actions sometimes
         self.eps = 0.5  # Initial probability of random action
-        self.EPS_DISCOUNT = 0.000016668  # By this value probability of random action is decreased by every step
+        self.EPS_DISCOUNT = 0.000008334  # By this value probability of random action is decreased by every step
         self.MIN_EPS = 0.05  # Minimum probability of random action
         self.BATCH_SIZE = 50  # Size of training batch on every step
 
@@ -297,7 +296,12 @@ class ActorCritic(object):
         Loading session from hard drive
         :param file_name: model files' name
         """
+        # TODO обрабатывать ошибку
         self.saver.restore(self.sess, file_name)
+
+    def reset_nn(self):
+        # TODO
+        pass
 
     def compute_batch(self, s):
         """
@@ -323,9 +327,7 @@ class ActorCritic(object):
         rnd = np.random.sample(1)
         # Choose a random action
         if rnd < self.eps and self.EPS_GREEDY:
-            a = np.random.sample(self.actor.ACTION_LEN)
-            a -= 0.5
-            a *= 2 * self.actor.A_BOUND
+            a = np.random.uniform(-self.actor.A_BOUND, self.actor.A_BOUND, self.actor.ACTION_LEN)
         else:  # Choose predicted optimal action
             sa = np.array([s])
             qa = self.compute_batch(sa)
