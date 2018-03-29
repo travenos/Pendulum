@@ -1,20 +1,20 @@
 import numpy as np
 import copy
-from keras.models import Sequential, load_model, clone_model
+from keras.models import Sequential, load_model
 from keras.layers import Dense
 from collections import deque
 
 
 class QLearningModel(object):
-    def __init__(self, inputs_n=3, neurons_n=(30, 14, 2), activations=("relu", "sigmoid", "linear")):
+    def __init__(self, state_len=3, action_len=1, a_bound=2, actions=2, neurons_n=(30, 14),
+                 activations=("relu", "sigmoid")):
         """Конструктор"""
-        self._inputs_n = inputs_n
-        self._neurons_n = copy.copy(neurons_n)
-        self._activations = copy.copy(activations)
-
-        a_bound = 2  # Амплитуда управляющего сигнала
-        self._alphabet = np.linspace(-a_bound, a_bound, neurons_n[-1])  # Алфавит действий
-        self.max_replay_memory_size = 100000  # Максимальный размер истории опыта
+        self._construct_net(state_len, action_len, actions, neurons_n, activations)
+        if action_len == 1:
+            self._alphabet = np.linspace(-a_bound, a_bound, actions)  # Алфавит действий
+            self._alphabet.resize((self._alphabet.size, 1))
+        else:
+            raise NotImplementedError("Implemented only for 1-coordinate control signals")
 
         self.EPS_GREEDY = True  # Make random actions sometimes
         self.eps = 0.5  # Initial probability of random action
@@ -22,15 +22,22 @@ class QLearningModel(object):
         self.MIN_EPS = 0.05  # Minimum probability of random action
         self.BATCH_SIZE = 50  # Size of training batch on every step
 
+        self.max_replay_memory_size = 100000  # Максимальный размер истории опыта
         self.replay_memory = deque(maxlen=self.max_replay_memory_size)  # История опыта
 
         self.GAMMA = 0.85  # Discount factor
 
+    def _construct_net(self, state_len, action_len, actions, neurons_n, activations):
+        self._inputs_n = state_len
+        self._neurons_n = list(neurons_n)
+        self._neurons_n.append(actions)
+        self._activations = list(activations)
+        self._activations.append("linear")
         self.neuralNet = Sequential()  # Нейронная сеть
+        self._new_nn(self._inputs_n, self._neurons_n, self._activations)
 
-        self.__new_nn(inputs_n, neurons_n, activations)
 
-    def __new_nn(self, inputs_n, neurons_n, activations):
+    def _new_nn(self, inputs_n, neurons_n, activations):
         """Создать новую нейронную сеть"""
         if type(inputs_n) != int:
             raise TypeError("inputs_n should be an integer")
@@ -39,7 +46,6 @@ class QLearningModel(object):
         if len(neurons_n) != len(activations):
             raise ValueError("neurons_n and activations should have the same length")
         del self.neuralNet
-        self.replay_memory = deque(maxlen=self.max_replay_memory_size)
         self.neuralNet = Sequential()  # Нейронная сеть
         for i, (n, af) in enumerate(zip(neurons_n, activations)):  # Добавляем слои
             if i == 0:
@@ -51,7 +57,7 @@ class QLearningModel(object):
 
     def reset_nn(self):
         """Создать новую нейронную сеть с исходными параметрами"""
-        self.__new_nn(self._inputs_n, self._neurons_n, self._activations)
+        self._new_nn(self._inputs_n, self._neurons_n, self._activations)
 
     def save_to_file(self, filename):
         """Сохранение сети вместе с весами в файл"""
@@ -69,7 +75,7 @@ class QLearningModel(object):
 
     def compute_batch(self, sa):
         """Обработка каждого элемента из массива"""
-        return list(map(self.action_weights, self.neuralNet.predict(sa)))
+        return self.action_weights(self.neuralNet.predict(sa))
 
     def compute(self, s):
         """Обработка одного элемента"""
@@ -79,16 +85,16 @@ class QLearningModel(object):
             raise ValueError("Length of s should be equal to number of inputs")
         # С вероятностью self.eps исследуем случайное действие
         rnd = np.random.sample()
-        if rnd < self.eps and self.EPS_GREEDY:
-            a = np.zeros_like(self._alphabet)
+        if self.EPS_GREEDY and rnd < self.eps:
+            a = np.zeros(len(self._alphabet))
             a[np.random.randint(0, len(a))] = 1
         else:
             sa = np.array([s])
             qa = self.compute_batch(sa)
             a = qa[0]
-        if self.eps > self.MIN_EPS:
+        if self.EPS_GREEDY and self.eps > self.MIN_EPS:
             self.eps -= self.EPS_DISCOUNT  # Уменьшение вероятности случайного действия
-        return sum(self._alphabet * a)
+        return self._alphabet[a.argmax()]
 
     @staticmethod
     def action_weights(q):
@@ -96,11 +102,11 @@ class QLearningModel(object):
         if type(q) != np.ndarray:
             raise TypeError("q should be a numpy array")
         a = np.zeros_like(q)
-        a[q.argmax()] = 1
+        for a_str, q_str in zip(a, q):
+            a_str[q_str.argmax()] = 1
         assert np.all(0 <= a)
         assert np.all(a <= 1)
         assert np.any(a > 0)
-        assert a.sum() == 1
         return a
 
     def get_q(self, s):
@@ -124,14 +130,18 @@ class QLearningModel(object):
         """
         if type(s) != np.ndarray:
             raise TypeError("s should be a numpy array")
+        if type(a) != np.ndarray:
+            raise TypeError("a should be a numpy array")
         if type(r) == np.ndarray or type(r) == list or type(r) == tuple:
             raise TypeError("r should be a scalar")
         if type(s1) != np.ndarray:
             raise TypeError("s1 should be a numpy array")
 
         # Перевод действия в one-hot-encoding
-        a_ohe = np.zeros_like(self._alphabet)
-        a_ohe[self._alphabet == a] = 1
+        a_mhe = np.float64(self._alphabet == a)
+        a_ohe = a_mhe[:, 0].copy()
+        for i in range(1, a_mhe.shape[1]):
+            a_ohe *= a_mhe[:, i]
         self.replay_memory.append([s, a_ohe, r, s1])  # Добавление нового опыта в историю
         if len(self.replay_memory) < self.BATCH_SIZE:  # Если недостаточно опыта в истории, тренировки не происходит
             return

@@ -5,7 +5,7 @@ from matplotlib.figure import Figure
 import numpy as np
 from matplotlib import rc
 
-# from simulation import PendulumLearning
+from simulation import PendulumLearning
 
 
 class MainWindow(QWidget):
@@ -14,7 +14,7 @@ class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
-        # self.sim = PendulumLearning(self)  # Объект с моделью и обучающейся системой управления маятником
+        self.sim = PendulumLearning(self)  # Объект с моделью и обучающейся системой управления маятником
 
         # Элементы интерфейса
         self.canvas_width = 800  # Ширина холста
@@ -27,7 +27,7 @@ class MainWindow(QWidget):
         self.new_nn_button = QPushButton('Новая нейросеть', self)
         self.load_nn_button = QPushButton('Загрузить нейросеть', self)
         self.save_nn_button = QPushButton('Сохранить нейросеть', self)
-        self.eps_button = QPushButton('Узнать вероятность случайного действия', self)
+        # self.eps_button = QPushButton('Узнать вероятность случайного действия', self)
         # Надписи
         self.eps_start_label = QLabel('Начальная вероятность\nслучайного действия', self)
         self.eps_discount_label = QLabel('Уменьшение вероятности\nна каждом шаге', self)
@@ -90,7 +90,7 @@ class MainWindow(QWidget):
         batch_size_step = 10
         batch_size_default_value = 50
         # Размер поля вывода данных
-        text_field_size = (460, 150)
+        text_field_size = (460, 190)
 
         buttons_left = canvas_position[0] + buttons_indent + self.canvas_width  # Координата левого края блока элементов управления
         buttons_up = canvas_position[1]  # Координата верхнего края блока элементов управления
@@ -134,6 +134,7 @@ class MainWindow(QWidget):
         self.eps_start_spinbox.setSingleStep(eps_start_step)
         self.eps_start_spinbox.setValue(eps_start_default_value)
         self.eps_start_spinbox.valueChanged.connect(self.change_start_eps)
+        self.change_start_eps()
         element_up += spinbox_distance
 
         self.eps_final_label.resize(self.eps_final_label.sizeHint())
@@ -145,6 +146,7 @@ class MainWindow(QWidget):
         self.eps_final_spinbox.setSingleStep(eps_final_step)
         self.eps_final_spinbox.setValue(eps_final_default_value)
         self.eps_final_spinbox.valueChanged.connect(self.change_final_eps)
+        self.change_final_eps()
         element_up += spinbox_distance
 
         self.eps_discount_label.resize(self.eps_discount_label.sizeHint())
@@ -158,39 +160,41 @@ class MainWindow(QWidget):
         self.eps_discount_spinbox.setSingleStep(eps_discount_step)
         self.eps_discount_spinbox.setValue(eps_discount_default_value)
         self.eps_discount_spinbox.valueChanged.connect(self.change_eps_discount)
+        self.change_eps_discount()
         element_up += spinbox_distance
 
         self.eps_greedy_checkbox.resize(self.eps_greedy_checkbox.sizeHint())
         self.eps_greedy_checkbox.move(controls_left, element_up)
         self.eps_greedy_checkbox.setChecked(True)
         self.eps_greedy_checkbox.stateChanged.connect(self.toggle_eps_greedy)
+        self.toggle_eps_greedy()
 
         labels_distance = self.eps_greedy_checkbox.height() + labels_indent
 
         element_up += labels_distance
 
-        self.eps_button.resize(self.eps_button.sizeHint())
-        self.eps_button.move(controls_left, element_up)
-        self.eps_button.clicked.connect(self.get_eps)
-
-        element_up += buttons_distance
+        # self.eps_button.resize(self.eps_button.sizeHint())
+        # self.eps_button.move(controls_left, element_up)
+        # self.eps_button.clicked.connect(self.get_eps)
+        # element_up += buttons_distance
 
         button_up = max([element_up, button_up])
         self.q_learning_rb.move(buttons_left, button_up)
         self.q_learning_rb.setChecked(True)
-        self.q_learning_rb.toggled.connect(self.select_q_learning)
+        self.q_learning_rb.toggled.connect(self.select_learning_model)
         button_up += labels_distance
-
         self.q_learning2_rb.move(buttons_left, button_up)
-        self.q_learning2_rb.toggled.connect(self.select_q_learning2)
+        self.q_learning2_rb.toggled.connect(self.select_learning_model)
         button_up += labels_distance
         self.actor_critic_rb.move(buttons_left, button_up)
-        self.actor_critic_rb.toggled.connect(self.select_actor_critic)
+        self.actor_critic_rb.toggled.connect(self.select_learning_model)
+        self.select_learning_model()
         button_up += labels_distance
 
         self.learning_checkbox.move(buttons_left, button_up)
         self.learning_checkbox.setChecked(True)
         self.learning_checkbox.stateChanged.connect(self.toggle_learning)
+        self.toggle_learning()
 
         button_up += labels_distance
         self.batch_size_label.resize(self.batch_size_label.sizeHint())
@@ -203,6 +207,7 @@ class MainWindow(QWidget):
         self.batch_size_spinbox.setSingleStep(batch_size_step)
         self.batch_size_spinbox.setValue(batch_size_default_value)
         self.batch_size_spinbox.valueChanged.connect(self.change_batch_size)
+        self.change_batch_size()
         button_up += spinbox_distance
 
         self.new_nn_button.resize(self.save_nn_button.sizeHint())
@@ -230,63 +235,70 @@ class MainWindow(QWidget):
         self.episode_length_spinbox.setSingleStep(episode_length_step)
         self.episode_length_spinbox.setValue(episode_length_default_value)
         self.episode_length_spinbox.valueChanged.connect(self.change_episode_length)
+        self.change_episode_length()
         button_up += spinbox_distance
 
         self.endless_episode_checkbox.move(buttons_left, button_up)
         self.endless_episode_checkbox.setChecked(False)
         self.endless_episode_checkbox.stateChanged.connect(self.toggle_endless_episode)
+        self.toggle_endless_episode()
         button_up += labels_distance
 
         self.output_text_field.resize(*text_field_size)
         self.output_text_field.move(buttons_left, button_up)
-        self.output_text_field.setEnabled(False)
+        self.output_text_field.setReadOnly(True)
         self.setWindowTitle('Pendulum')
         self.show()
+
+    def closeEvent(self, event):
+        """
+        Закрытие окна
+        """
+        self.stop()
+        self.close()
 
     def start(self):
         """
         Запуск моделирования
         """
-        pass
-        #self.sim.start()
+        self.sim.start()
 
     def stop(self):
-        pass
-        #self.sim.stop()
+        self.sim.stop()
 
     def restart(self):
-        pass
-        #self.sim.stop()
+        self.sim.restart()
 
     def change_start_eps(self):
-        pass
+        self.sim.set_eps(self.eps_start_spinbox.value())
 
     def change_final_eps(self):
-        pass
+        self.sim.set_final_eps(self.eps_final_spinbox.value())
 
     def change_eps_discount(self):
-        pass
+        self.sim.set_eps_discount(self.eps_discount_spinbox.value())
 
-    def select_q_learning(self):
-        pass
-
-    def select_q_learning2(self):
-        pass
-
-    def select_actor_critic(self):
-        pass
+    def select_learning_model(self):
+        if self.q_learning_rb.isChecked():
+            lm_number = 0
+        elif self.q_learning2_rb.isChecked():
+            lm_number = 1
+        else:
+            lm_number = 2
+        self.sim.choose_learning_model(lm_number)
 
     def toggle_eps_greedy(self):
-        pass
+        self.sim.set_eps_greedy(self.eps_greedy_checkbox.isChecked())
 
     def toggle_learning(self):
-        pass
+        enable = self.eps_greedy_checkbox.isChecked()
+        self.sim.is_learning = enable
 
-    def get_eps(self):
-        pass
+    # def get_eps(self):
+    #     pass
 
     def change_batch_size(self):
-        pass
+        self.sim.set_batch_size(self.batch_size_spinbox.value())
     
     def new_nn(self):
         pass
@@ -298,17 +310,25 @@ class MainWindow(QWidget):
         pass
 
     def change_episode_length(self):
-        pass
+        episode_length = self.episode_length_spinbox.value()
+        self.sim.max_ep_steps = episode_length
 
     def toggle_endless_episode(self):
-        pass
+        enable = self.endless_episode_checkbox.isChecked()
+        self.sim.endless = enable
 
-    def paint_scene(self):
+    def paint_scene(self, thetas, omegas, moments, times, running_reward, episode):
         """
-        Рисовать на холсте цилиндр и роботов
+        Рисовать графики
         """
-        # TODO Рисовать на холсте цилиндр и роботов
-        pass
+        self.canvas.clear()
+        self.canvas.theta_plot.plot(times, thetas, 'b')
+        self.canvas.omega_plot.plot(times, omegas, 'g')
+        self.canvas.moment_plot.plot(times, moments, 'r')
+        self.canvas.draw()
+        eps = self.sim.get_eps()
+        self.output_text_field.append("Episode %d: running reward: %d, random probability: %-10.5g"
+                                      % (episode, running_reward, eps))
 
 
 class Plotter(FigureCanvas):
@@ -322,36 +342,25 @@ class Plotter(FigureCanvas):
         self.setParent(parent)
 
         self.theta_plot = self.figure.add_subplot(311)
+        self.omega_plot = self.figure.add_subplot(312)
+        self.moment_plot = self.figure.add_subplot(313)
+        self.figure.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.425, wspace=0.35)
+        self.clear()
+
+    def clear(self):
+        self.theta_plot.clear()
         self.theta_plot.set_title("Угол отклонения маятника от вертикальной оси")
         self.theta_plot.set_ylabel('θ, рад')
         self.theta_plot.grid(True)
 
-        self.omega_plot = self.figure.add_subplot(312)
+        self.omega_plot.clear()
         self.omega_plot.set_title("Угловая скорость маятника")
         self.omega_plot.set_ylabel('ω, рад/с')
         self.omega_plot.grid(True)
 
-        self.moment_plot = self.figure.add_subplot(313)
+        self.moment_plot.clear()
         self.moment_plot.set_title("Внешний момент силы, воздействующий на маятник")
         self.moment_plot.set_xlabel('t, с')
         self.moment_plot.set_ylabel('M, Н•м')
         self.moment_plot.grid(True)
 
-        self.figure.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.425, wspace=0.35)
-
-    # def set_title(self, title):
-    #     self.ax.set_title(title)
-    #
-    # def plot(self, data=None, color='b'):
-    #     if data is None:
-    #         self.ax.plot()
-    #     else:
-    #         self.ax.plot(data, color)
-    #     self.draw()
-    #
-    # def draw_circle(self, center=(0,0), radius=1, color='b', fill=False, rescale=None):
-    #     circle = matplotlib.patches.Circle(center, radius=radius, color=color, fill=fill)
-    #     self.ax.add_patch(circle)
-    #     if rescale is not None:
-    #         self.ax.set_xlim(xmin=center[0]-rescale*radius, xmax=center[0]+rescale*radius)
-    #         self.ax.set_ylim(ymin=center[1]-rescale*radius, ymax=center[1]+rescale*radius)

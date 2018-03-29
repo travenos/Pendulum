@@ -253,7 +253,7 @@ class ActorCritic(object):
     """
     Goal of this class is learning with actor and critic connected together
     """
-    def __init__(self):
+    def __init__(self, state_len=3, action_len=1, a_bound=2):
         """
         Default constructor
         """
@@ -268,7 +268,7 @@ class ActorCritic(object):
         self.BATCH_SIZE = 50  # Size of training batch on every step
 
         # Parameters for creation actor and critic models
-        self.actor_param = {"state_len": 3, "action_len": 1, "a_bound": 2,
+        self.actor_param = {"state_len": state_len, "action_len": action_len, "a_bound": a_bound,
                             "hidden_neurons": (30, 7), "activations": (tf.nn.relu, tf.nn.sigmoid)}
         self.critic_param = {"hidden_neurons": (40, 19), "activations": (tf.nn.relu, tf.nn.sigmoid)}
 
@@ -326,15 +326,14 @@ class ActorCritic(object):
             raise ValueError("Length of s should be equal to number of inputs")
         rnd = np.random.sample(1)
         # Choose a random action
-        if rnd < self.eps and self.EPS_GREEDY:
+        if self.EPS_GREEDY and rnd < self.eps:
             a = np.random.uniform(-self.actor.A_BOUND, self.actor.A_BOUND, self.actor.ACTION_LEN)
         else:  # Choose predicted optimal action
             sa = np.array([s])
             qa = self.compute_batch(sa)
             a = qa[0]
-        self.eps -= self.EPS_DISCOUNT  # Decreasing random action probability
-        if self.eps < self.MIN_EPS:
-            self.eps = self.MIN_EPS
+        if self.EPS_GREEDY and self.eps > self.MIN_EPS:
+            self.eps -= self.EPS_DISCOUNT  # Decreasing random action probability
         return a
 
     def training(self, s, a, r, s1):
