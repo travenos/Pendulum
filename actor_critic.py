@@ -289,19 +289,24 @@ class ActorCritic(object):
         Saving session to hard drive
         :param file_name: name for model files
         """
-        self.saver.save(self.sess, file_name)
+        try:
+            self.saver.save(self.sess, file_name)
+        except tf.errors.PermissionDeniedError:
+            raise PermissionError("Writing permission denied for file "+file_name)
 
     def load_from_file(self, file_name):
         """
         Loading session from hard drive
         :param file_name: model files' name
         """
-        # TODO обрабатывать ошибку
-        self.saver.restore(self.sess, file_name)
+        extension_len = 5
+        try:
+            self.saver.restore(self.sess, file_name[:-extension_len])
+        except Exception:
+            raise OSError("Can not restore TensorFlow session from this file")
 
     def reset_nn(self):
-        # TODO
-        pass
+        self.sess.run(tf.global_variables_initializer())
 
     def compute_batch(self, s):
         """

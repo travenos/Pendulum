@@ -1,8 +1,7 @@
 from PyQt5.QtWidgets import QWidget, QPushButton, QLabel, QTextBrowser, QSpinBox, QDoubleSpinBox, \
-    QRadioButton, QCheckBox
+    QRadioButton, QCheckBox, QFileDialog, QMessageBox
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
-import numpy as np
 from matplotlib import rc
 
 from simulation import PendulumLearning
@@ -27,7 +26,8 @@ class MainWindow(QWidget):
         self.new_nn_button = QPushButton('Новая нейросеть', self)
         self.load_nn_button = QPushButton('Загрузить нейросеть', self)
         self.save_nn_button = QPushButton('Сохранить нейросеть', self)
-        # self.eps_button = QPushButton('Узнать вероятность случайного действия', self)
+        self.save_plots_button = QPushButton('Сохранить графики', self)
+        self.clear_button = QPushButton('Очистить', self)
         # Надписи
         self.eps_start_label = QLabel('Начальная вероятность\nслучайного действия', self)
         self.eps_discount_label = QLabel('Уменьшение вероятности\nна каждом шаге', self)
@@ -101,7 +101,7 @@ class MainWindow(QWidget):
 
         self.canvas.move(*canvas_position)
 
-        # Кнопки старт, стоп, перезапуск, очистка
+        # Кнопки старт, стоп, перезапуск
         button_up = buttons_up  # Верхняя позиция текущей кнопки
         self.start_button.resize(self.start_button.sizeHint())
         self.start_button.move(buttons_left, button_up)
@@ -173,11 +173,6 @@ class MainWindow(QWidget):
 
         element_up += labels_distance
 
-        # self.eps_button.resize(self.eps_button.sizeHint())
-        # self.eps_button.move(controls_left, element_up)
-        # self.eps_button.clicked.connect(self.get_eps)
-        # element_up += buttons_distance
-
         button_up = max([element_up, button_up])
         self.q_learning_rb.move(buttons_left, button_up)
         self.q_learning_rb.setChecked(True)
@@ -210,6 +205,8 @@ class MainWindow(QWidget):
         self.change_batch_size()
         button_up += spinbox_distance
 
+        element_up = button_up
+
         self.new_nn_button.resize(self.save_nn_button.sizeHint())
         self.new_nn_button.move(buttons_left, button_up)
         self.new_nn_button.clicked.connect(self.new_nn)
@@ -224,6 +221,18 @@ class MainWindow(QWidget):
         self.save_nn_button.move(buttons_left, button_up)
         self.save_nn_button.clicked.connect(self.save_nn)
         button_up += buttons_distance
+
+        elements_left = buttons_left + self.save_nn_button.width() + buttons_indent
+
+        self.save_plots_button.resize(self.save_plots_button.sizeHint())
+        self.save_plots_button.move(elements_left, element_up)
+        self.save_plots_button.clicked.connect(self.save_plots)
+        element_up += buttons_distance
+
+        self.clear_button.resize(self.save_plots_button.sizeHint())
+        self.clear_button.move(elements_left, element_up)
+        self.clear_button.clicked.connect(self.clear)
+        element_up += buttons_distance
 
         self.episode_length_label.resize(self.episode_length_label.sizeHint())
         self.episode_length_label.move(buttons_left, button_up)
@@ -247,20 +256,17 @@ class MainWindow(QWidget):
         self.output_text_field.resize(*text_field_size)
         self.output_text_field.move(buttons_left, button_up)
         self.output_text_field.setReadOnly(True)
-        self.setWindowTitle('Pendulum')
+        self.setWindowTitle('Обратный маятник')
         self.show()
 
     def closeEvent(self, event):
-        """
-        Закрытие окна
-        """
-        self.stop()
+        """Закрытие окна"""
+        self.sim.exit()
+        self.deleteLater()
         self.close()
 
     def start(self):
-        """
-        Запуск моделирования
-        """
+        """Запуск моделирования"""
         self.sim.start()
 
     def stop(self):
@@ -294,20 +300,61 @@ class MainWindow(QWidget):
         enable = self.eps_greedy_checkbox.isChecked()
         self.sim.is_learning = enable
 
-    # def get_eps(self):
-    #     pass
+    def save_plots(self):
+        file_dialogue = QFileDialog()
+        file_dialogue.setFileMode(QFileDialog.AnyFile)
+        file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
+        name_filters = ["Изображения PNG (*.png)", "Все файлы (*.*)"]
+        file_dialogue.setNameFilters(name_filters)
+        if file_dialogue.exec():
+            filename = file_dialogue.selectedFiles()[0]
+            try:
+                self.canvas.figure.savefig(filename)
+            except PermissionError as e:
+                QMessageBox.warning(self, "Ошибка", str(e))
+                self.canvas.draw()
+        file_dialogue.deleteLater()
 
     def change_batch_size(self):
         self.sim.set_batch_size(self.batch_size_spinbox.value())
     
     def new_nn(self):
-        pass
+        self.sim.new_nn()
     
     def load_nn(self):
-        pass
+        file_dialogue = QFileDialog()
+        file_dialogue.setFileMode(QFileDialog.ExistingFile)
+        file_dialogue.setAcceptMode(QFileDialog.AcceptOpen)
+        if self.actor_critic_rb.isChecked():
+            name_filters = ["Сессия TensorFlow (*.meta)"]
+        else:
+            name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
+        file_dialogue.setNameFilters(name_filters)
+        if file_dialogue.exec():
+            filename = file_dialogue.selectedFiles()[0]
+            try:
+                self.sim.load_nn(filename)
+            except OSError or FileNotFoundError or FileNotFoundError as e:
+                QMessageBox.warning(self, "Ошибка", str(e))
+                # self.new_nn()
+        file_dialogue.deleteLater()
     
     def save_nn(self):
-        pass
+        file_dialogue = QFileDialog()
+        file_dialogue.setFileMode(QFileDialog.AnyFile)
+        file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
+        if self.actor_critic_rb.isChecked():
+            name_filters = ["Сессия TensorFlow (*.*)"]
+        else:
+            name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
+        file_dialogue.setNameFilters(name_filters)
+        if file_dialogue.exec():
+            filename = file_dialogue.selectedFiles()[0]
+            try:
+                self.sim.save_nn(filename)
+            except PermissionError as e:
+                QMessageBox.warning(self, "Ошибка", str(e))
+        file_dialogue.deleteLater()
 
     def change_episode_length(self):
         episode_length = self.episode_length_spinbox.value()
@@ -316,6 +363,11 @@ class MainWindow(QWidget):
     def toggle_endless_episode(self):
         enable = self.endless_episode_checkbox.isChecked()
         self.sim.endless = enable
+
+    def clear(self):
+        self.canvas.clear()
+        self.canvas.draw()
+        self.output_text_field.clear()
 
     def paint_scene(self, thetas, omegas, moments, times, running_reward, episode):
         """

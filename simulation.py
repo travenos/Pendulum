@@ -16,7 +16,7 @@ class PendulumLearning(object):
         self._S_LEN = self.env.observation_space.shape[0]
         self._A_BOUND = self.env.action_space.high
 
-        # Используемы модели
+        # Используемые модели
         self.learning_models_list = [QLearningModel(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND),
                                      QLearningModel2(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND),
                                      ActorCritic(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND)]
@@ -69,7 +69,12 @@ class PendulumLearning(object):
         self.learning_model.reset_nn()
 
     def start(self):
+        if self.working:
+            return
         self.working = True
+        self._simulation_process()
+
+    def _simulation_process(self):
         self.steps = 0
         t = 0
         thetas = []
@@ -110,12 +115,18 @@ class PendulumLearning(object):
                     times.clear()
                     sum_reward = 0
                     self.steps = 0
-                    if not self.endless:    # Если эпизод в среде не бесконечный
+                    if not self.endless:  # Если эпизод в среде не бесконечный
                         self.reset_env()
 
     def stop(self):
         self.steps = 0
         self.working = False
+
+    def exit(self):
+        self.working = False
+        for model in self.learning_models_list:
+            model.close_session()
+        self.env.close()
 
     def restart(self):
         if self.working:
@@ -147,3 +158,4 @@ class PendulumLearning(object):
     def set_batch_size(self, batch_size):
         for model in self.learning_models_list:
             model.BATCH_SIZE = batch_size
+

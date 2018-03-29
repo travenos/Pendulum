@@ -1,5 +1,4 @@
 import numpy as np
-import copy
 from keras.models import Sequential, load_model
 from keras.layers import Dense
 from collections import deque
@@ -35,7 +34,6 @@ class QLearningModel(object):
         self._activations.append("linear")
         self.neuralNet = Sequential()  # Нейронная сеть
         self._new_nn(self._inputs_n, self._neurons_n, self._activations)
-
 
     def _new_nn(self, inputs_n, neurons_n, activations):
         """Создать новую нейронную сеть"""
@@ -197,3 +195,6 @@ class QLearningModel(object):
         max_Q1 = max_Q1.reshape((max_Q1.size,1))
         alpha = 1
         return Q + alpha * a * (r + self.GAMMA * max_Q1 - Q)
+
+    def close_session(self):
+        pass
