@@ -20,20 +20,20 @@ class MainWindow(QWidget):
         self.canvas_height = 675  # Длина холста
         self.canvas = Plotter(self.canvas_width, self.canvas_height, dpi=100, parent=self)  # Холст с графиками
         # Кнопки
-        self.start_button = QPushButton('Старт', self)
-        self.stop_button = QPushButton('Стоп', self)
-        self.restart_button = QPushButton('Рестарт', self)
-        self.new_nn_button = QPushButton('Новая нейросеть', self)
-        self.load_nn_button = QPushButton('Загрузить нейросеть', self)
-        self.save_nn_button = QPushButton('Сохранить нейросеть', self)
-        self.save_plots_button = QPushButton('Сохранить графики', self)
-        self.clear_button = QPushButton('Очистить', self)
+        self.start_button = QPushButton('Start', self)
+        self.stop_button = QPushButton('Stop', self)
+        self.restart_button = QPushButton('Restart', self)
+        self.new_nn_button = QPushButton('New neural net', self)
+        self.load_nn_button = QPushButton('Load neural net', self)
+        self.save_nn_button = QPushButton('Save neural net', self)
+        self.save_plots_button = QPushButton('Save plots', self)
+        self.clear_button = QPushButton('Clear', self)
         # Надписи
-        self.eps_start_label = QLabel('Начальная вероятность\nслучайного действия', self)
-        self.eps_discount_label = QLabel('Уменьшение вероятности\nна каждом шаге', self)
-        self.eps_final_label = QLabel('Конечная вероятность\nслучайного действия', self)
-        self.episode_length_label = QLabel('Длина эпизода', self)
-        self.batch_size_label = QLabel('Размер обучающей\nпачки', self)
+        self.eps_start_label = QLabel('Initial probability\nof random action', self)
+        self.eps_discount_label = QLabel('Discount of probability\non each step', self)
+        self.eps_final_label = QLabel('Final probability\nof random action', self)
+        self.episode_length_label = QLabel('Episode length', self)
+        self.batch_size_label = QLabel('Training batch\nsize', self)
         # Поля ввода чисел
         self.eps_start_spinbox = QDoubleSpinBox(self)
         self.eps_discount_spinbox = QDoubleSpinBox(self)
@@ -42,12 +42,12 @@ class MainWindow(QWidget):
         self.batch_size_spinbox = QSpinBox(self)
         # Кнопки выбора обучающейся модели
         self.q_learning_rb = QRadioButton("Deep Q-learning", self)
-        self.q_learning2_rb= QRadioButton("Q-learning, сеть с одним выходом", self)
+        self.q_learning2_rb= QRadioButton("Q-learning, net with one output", self)
         self.actor_critic_rb = QRadioButton("Actor-critic (DDPG)", self)
         # Чекбоксы
-        self.eps_greedy_checkbox = QCheckBox("Использовать случайные действия", self)
-        self.learning_checkbox = QCheckBox("Включить обучение", self)
-        self.endless_episode_checkbox = QCheckBox("Бесконечный эпизод", self)
+        self.eps_greedy_checkbox = QCheckBox("Use random actions", self)
+        self.learning_checkbox = QCheckBox("Turn training on", self)
+        self.endless_episode_checkbox = QCheckBox("Endless episode", self)
         # Вывод данных
         self.output_text_field = QTextBrowser(self)
 
@@ -254,7 +254,7 @@ class MainWindow(QWidget):
         self.output_text_field.resize(*text_field_size)
         self.output_text_field.move(buttons_left, button_up)
         self.output_text_field.setReadOnly(True)
-        self.setWindowTitle('Обратный маятник')
+        self.setWindowTitle('The Reverse Pendulum')
         self.show()
 
     def closeEvent(self, event):
@@ -311,14 +311,14 @@ class MainWindow(QWidget):
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
-        name_filters = ["Изображения PNG (*.png)", "Все файлы (*.*)"]
+        name_filters = ["PNG images (*.png)", "All files (*.*)"]
         file_dialogue.setNameFilters(name_filters)
         if file_dialogue.exec():
             filename = file_dialogue.selectedFiles()[0]
             try:
                 self.canvas.figure.savefig(filename)
             except PermissionError as e:
-                QMessageBox.warning(self, "Ошибка", str(e))
+                QMessageBox.warning(self, "Error", str(e))
                 self.canvas.draw()
         file_dialogue.deleteLater()
 
@@ -336,16 +336,16 @@ class MainWindow(QWidget):
         file_dialogue.setFileMode(QFileDialog.ExistingFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptOpen)
         if self.actor_critic_rb.isChecked():
-            name_filters = ["Сессия TensorFlow (*.meta)"]
+            name_filters = ["TensorFlow session (*.meta)"]
         else:
-            name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
+            name_filters = ["Hierarchical data format (*.hdf)", "All files (*.*)"]
         file_dialogue.setNameFilters(name_filters)
         if file_dialogue.exec():
             filename = file_dialogue.selectedFiles()[0]
             try:
                 self.sim.load_nn(filename)
             except OSError or FileNotFoundError or FileNotFoundError as e:
-                QMessageBox.warning(self, "Ошибка", str(e))
+                QMessageBox.warning(self, "Error", str(e))
                 # self.new_nn()
         file_dialogue.deleteLater()
     
@@ -355,16 +355,16 @@ class MainWindow(QWidget):
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
         if self.actor_critic_rb.isChecked():
-            name_filters = ["Сессия TensorFlow (*.*)"]
+            name_filters = ["TensorFlow session (*.meta)"]
         else:
-            name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
+            name_filters = ["Hierarchical data format (*.hdf)", "All files (*.*)"]
         file_dialogue.setNameFilters(name_filters)
         if file_dialogue.exec():
             filename = file_dialogue.selectedFiles()[0]
             try:
                 self.sim.save_nn(filename)
             except PermissionError as e:
-                QMessageBox.warning(self, "Ошибка", str(e))
+                QMessageBox.warning(self, "Error", str(e))
         file_dialogue.deleteLater()
 
     def change_episode_length(self):
@@ -415,18 +415,18 @@ class Plotter(FigureCanvas):
     def clear(self):
         """Очистить графики"""
         self.theta_plot.clear()
-        self.theta_plot.set_title("Угол отклонения маятника от вертикальной оси")
-        self.theta_plot.set_ylabel('θ, рад')
+        self.theta_plot.set_title("A deviation angle of the pendulum from vertical axis")
+        self.theta_plot.set_ylabel('θ, rad')
         self.theta_plot.grid(True)
 
         self.omega_plot.clear()
-        self.omega_plot.set_title("Угловая скорость маятника")
-        self.omega_plot.set_ylabel('ω, рад/с')
+        self.omega_plot.set_title("An angular velocity of the pendulum")
+        self.omega_plot.set_ylabel('ω, rad/s')
         self.omega_plot.grid(True)
 
         self.moment_plot.clear()
-        self.moment_plot.set_title("Внешний момент силы, воздействующий на маятник")
-        self.moment_plot.set_xlabel('t, с')
-        self.moment_plot.set_ylabel('M, Н•м')
+        self.moment_plot.set_title("An external moment of force acting on the pendulum")
+        self.moment_plot.set_xlabel('t, s')
+        self.moment_plot.set_ylabel('M, N•m')
         self.moment_plot.grid(True)
 
