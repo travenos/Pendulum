@@ -337,8 +337,10 @@ class ActorCritic(object):
             sa = np.array([s])
             qa = self.compute_batch(sa)
             a = qa[0]
-        if self.EPS_GREEDY and self.eps > self.MIN_EPS:
+        if self.EPS_GREEDY:
             self.eps -= self.EPS_DISCOUNT  # Decreasing random action probability
+            if self.eps < self.MIN_EPS:
+                self.eps = self.MIN_EPS
         return a
 
     def training(self, s, a, r, s1):

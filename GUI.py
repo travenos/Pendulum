@@ -54,9 +54,7 @@ class MainWindow(QWidget):
         self.initUI()
 
     def initUI(self):
-        """
-        Формирование интерфейса
-        """
+        """Формирование интерфейса"""
         size = (1300, 715)  # Размер окна
         position = (100, 100)  # Начальная позиция окна
         canvas_position = (20, 20)  # Верхний левый угол холста
@@ -270,21 +268,27 @@ class MainWindow(QWidget):
         self.sim.start()
 
     def stop(self):
+        """Остановка моделирования"""
         self.sim.stop()
 
     def restart(self):
+        """Поместить маятник в случайную позицию"""
         self.sim.restart()
 
     def change_start_eps(self):
+        """Изменить начальную вероятность случайного действия"""
         self.sim.set_eps(self.eps_start_spinbox.value())
 
     def change_final_eps(self):
+        """Изменить конечную вероятность случайного действия"""
         self.sim.set_final_eps(self.eps_final_spinbox.value())
 
     def change_eps_discount(self):
+        """Изменить шаг уменьшения вероятности случайного действия"""
         self.sim.set_eps_discount(self.eps_discount_spinbox.value())
 
     def select_learning_model(self):
+        """Выбрать обучающуюся модель"""
         if self.q_learning_rb.isChecked():
             lm_number = 0
         elif self.q_learning2_rb.isChecked():
@@ -294,13 +298,16 @@ class MainWindow(QWidget):
         self.sim.choose_learning_model(lm_number)
 
     def toggle_eps_greedy(self):
+        """Включить или отключить совершение случайных действий"""
         self.sim.set_eps_greedy(self.eps_greedy_checkbox.isChecked())
 
     def toggle_learning(self):
+        """Производить ли обучение модели, или просто включить управление"""
         enable = self.eps_greedy_checkbox.isChecked()
         self.sim.is_learning = enable
 
     def save_plots(self):
+        """Сохранить графики в файл"""
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
@@ -316,12 +323,15 @@ class MainWindow(QWidget):
         file_dialogue.deleteLater()
 
     def change_batch_size(self):
+        """Изменить размер пачки при обучении нейросетей"""
         self.sim.set_batch_size(self.batch_size_spinbox.value())
     
     def new_nn(self):
+        """Создать новую нейросеть со случайными коэффициентами"""
         self.sim.new_nn()
     
     def load_nn(self):
+        """Загрузить нейросеть из файла"""
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.ExistingFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptOpen)
@@ -340,6 +350,7 @@ class MainWindow(QWidget):
         file_dialogue.deleteLater()
     
     def save_nn(self):
+        """Сохранить нейросеть в файл"""
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
@@ -357,22 +368,23 @@ class MainWindow(QWidget):
         file_dialogue.deleteLater()
 
     def change_episode_length(self):
+        """Изменить длину эпизода - количества шагов перед случайным выбором новой позиции маятника"""
         episode_length = self.episode_length_spinbox.value()
         self.sim.max_ep_steps = episode_length
 
     def toggle_endless_episode(self):
+        """Никогда не выбирать случайную позицию для маятника"""
         enable = self.endless_episode_checkbox.isChecked()
         self.sim.endless = enable
 
     def clear(self):
+        """Очистить графики и поле с информацией об обучении"""
         self.canvas.clear()
         self.canvas.draw()
         self.output_text_field.clear()
 
     def paint_scene(self, thetas, omegas, moments, times, running_reward, episode):
-        """
-        Рисовать графики
-        """
+        """Рисовать графики"""
         self.canvas.clear()
         self.canvas.theta_plot.plot(times, thetas, 'b')
         self.canvas.omega_plot.plot(times, omegas, 'g')
@@ -384,6 +396,7 @@ class MainWindow(QWidget):
 
 
 class Plotter(FigureCanvas):
+    """Класс отображения графиков"""
     def __init__(self, width, height, dpi, parent=None):
         font = {'family': 'Verdana',
                 'weight': 'normal'}
@@ -400,6 +413,7 @@ class Plotter(FigureCanvas):
         self.clear()
 
     def clear(self):
+        """Очистить графики"""
         self.theta_plot.clear()
         self.theta_plot.set_title("Угол отклонения маятника от вертикальной оси")
         self.theta_plot.set_ylabel('θ, рад')

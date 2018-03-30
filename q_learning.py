@@ -5,10 +5,13 @@ from collections import deque
 
 
 class QLearningModel(object):
+    """Deep Q-learning"""
     def __init__(self, state_len=3, action_len=1, a_bound=2, actions=2, neurons_n=(30, 14),
                  activations=("relu", "sigmoid")):
         """Конструктор"""
-        self._construct_net(state_len, action_len, actions, neurons_n, activations)
+        self._state_len = state_len  # Длина вектора состояния
+        self._action_len = action_len  # Длина вектора действия
+        self._construct_net(state_len, action_len, actions, neurons_n, activations)  # Создать нейронную сеть
         if action_len == 1:
             self._alphabet = np.linspace(-a_bound, a_bound, actions)  # Алфавит действий
             self._alphabet.resize((self._alphabet.size, 1))
@@ -27,6 +30,7 @@ class QLearningModel(object):
         self.GAMMA = 0.85  # Discount factor
 
     def _construct_net(self, state_len, action_len, actions, neurons_n, activations):
+        """Создать нейронную сеть для заданных параметров"""
         self._inputs_n = state_len
         self._neurons_n = list(neurons_n)
         self._neurons_n.append(actions)
@@ -71,52 +75,54 @@ class QLearningModel(object):
             self.neuralNet = new_net
         return self
 
-    def compute_batch(self, sa):
+    def compute_batch_ohe(self, s_batch):
         """Обработка каждого элемента из массива"""
-        return self.action_weights(self.neuralNet.predict(sa))
+        return self.action_weights(self.neuralNet.predict(s_batch))
 
     def compute(self, s):
         """Обработка одного элемента"""
         if type(s) != np.ndarray:
             raise TypeError("s should be a numpy array")
-        if len(s) != self.get_inputs_count():
-            raise ValueError("Length of s should be equal to number of inputs")
+        if len(s) != self._state_len:
+            raise ValueError("Incorrect length of state vector")
         # С вероятностью self.eps исследуем случайное действие
         rnd = np.random.sample()
         if self.EPS_GREEDY and rnd < self.eps:
             a = np.zeros(len(self._alphabet))
             a[np.random.randint(0, len(a))] = 1
         else:
-            sa = np.array([s])
-            qa = self.compute_batch(sa)
-            a = qa[0]
-        if self.EPS_GREEDY and self.eps > self.MIN_EPS:
+            s_batch = np.array([s])
+            q_alph_batch = self.compute_batch_ohe(s_batch)
+            a = q_alph_batch[0]
+        if self.EPS_GREEDY:
             self.eps -= self.EPS_DISCOUNT  # Уменьшение вероятности случайного действия
+            if self.eps < self.MIN_EPS:
+                self.eps = self.MIN_EPS
         return self._alphabet[a.argmax()]
 
     @staticmethod
-    def action_weights(q):
+    def action_weights(q_alph_batch):
         """Вычисление вектора действия (one-hot-encoding) по вектору q-занчений"""
-        if type(q) != np.ndarray:
+        if type(q_alph_batch) != np.ndarray:
             raise TypeError("q should be a numpy array")
-        a = np.zeros_like(q)
-        for a_str, q_str in zip(a, q):
+        a_batch = np.zeros_like(q_alph_batch)
+        for a_str, q_str in zip(a_batch, q_alph_batch):
             a_str[q_str.argmax()] = 1
-        assert np.all(0 <= a)
-        assert np.all(a <= 1)
-        assert np.any(a > 0)
-        return a
+        assert np.all(0 <= a_batch)
+        assert np.all(a_batch <= 1)
+        assert np.any(a_batch > 0)
+        return a_batch
 
     def get_q(self, s):
         """Получить значения Q-функции для состояния s"""
-        sa = np.array([s])
-        qa = self.neuralNet.predict(sa)
-        q = qa[0]
-        return q
+        s_batch = np.array([s])
+        q_alph_batch = self.neuralNet.predict(s_batch)
+        q_alph = q_alph_batch[0]
+        return q_alph
 
-    def get_q_batch(self, s):
-        """Получить значения Q-функции для каждого состояния из пачки s"""
-        return self.neuralNet.predict(s)
+    def get_q_batch(self, s_batch):
+        """Получить значения Q-функций для каждого состояния из пачки s_batch и каждого действия из алфавита"""
+        return self.neuralNet.predict(s_batch)
 
     def training(self, s, a, r, s1):
         """
@@ -181,20 +187,14 @@ class QLearningModel(object):
         cfg = net.get_config()
         return cfg[-1]['config']['units']
 
-    def __calc_target(self, s, a, r, s1):
+    def __calc_target_batch(self, s_batch, a_batch, r_batch, s1_batch):
         """Вычисление данных, подаваемых на выход нейронной сети (согласно уравнению Беллмана)"""
-        q = self.get_q(s)
-        max_q1 = max(self.get_q(s1))
+        Q = self.get_q_batch(s_batch)
+        max_Q1 = np.max(self.get_q_batch(s1_batch), axis=1)
+        max_Q1 = max_Q1.reshape((max_Q1.size, 1))
         alpha = 1
-        return q + alpha * a * (r + self.GAMMA * max_q1 - q)
-
-    def __calc_target_batch(self, s, a, r, s1):
-        """Вычисление данных, подаваемых на выход нейронной сети (согласно уравнению Беллмана)"""
-        Q = self.get_q_batch(s)
-        max_Q1 = np.max(self.get_q_batch(s1), axis=1)
-        max_Q1 = max_Q1.reshape((max_Q1.size,1))
-        alpha = 1
-        return Q + alpha * a * (r + self.GAMMA * max_Q1 - Q)
+        return Q + alpha * a_batch * (r_batch + self.GAMMA * max_Q1 - Q)
 
     def close_session(self):
+        """Закрыть сессию (для унификации с классами, использующими TensorFlow)"""
         pass
