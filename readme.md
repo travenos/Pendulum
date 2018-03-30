@@ -32,6 +32,7 @@ python main.py
 ```
 python3 main.py
 ```  
+В папке *Nets* сохранены обученные нейронные сети для каждого из трёх алгоритмов.  
 
 ![Screenshot 1](Images/main_window.png)  ![Screenshot 2](Images/pendulum.png)  
 ![Animation 1](Images/DDPG_animation.gif)  ![Animation 2](Images/DDPG_animation2.gif)  
