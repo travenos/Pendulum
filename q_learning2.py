@@ -54,7 +54,7 @@ class QLearningModel2(QLearningModel):
                 sa_batch.append(np.concatenate((s, a)))
         sa_batch = np.array(sa_batch)
         q_alph_batch = self.neuralNet.predict(sa_batch)
-        q_alph_batch.resize((int(q_alph_batch.size / self._alphabet.size), self._alphabet.size))
+        q_alph_batch.resize((int(q_alph_batch.size / len(self._alphabet)), len(self._alphabet)))
         return q_alph_batch
     
     def get_actions_q_batch(self, s_batch, a_batch):
