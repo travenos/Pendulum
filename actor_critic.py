@@ -248,6 +248,7 @@ class ActorCritic(object):
         self.MIN_EPS = 0.05  # Minimum probability of random action
         self.BATCH_SIZE = 50  # Size of training batch on every step
         self.TAU_CONST = 0.1  # Weights transfer rate
+        self.ALPHA = 1  # TD learning rate
 
         # Parameters for creation actor and critic models
         self.actor_param = {"state_len": state_len, "action_len": action_len, "a_bound": a_bound,
@@ -318,17 +319,22 @@ class ActorCritic(object):
     def reset_nn(self):
         self.sess.run(tf.global_variables_initializer())
 
-    def calculate_critic_goal(self, r, s1):
+    def calculate_critic_goal(self, s, a, r, s1):
         """
         Compute Critic targets using Bellman equation
+        :param s: state vector
+        :param a: action vector
         :param r: scalar reward, received for moving to state s1
         :param s1:  new state vector
         :return: goal output for critic
         """
         # s, a, r, s1 are numpy arrays
         max_q1 = self.critic2.get_max_q(s1)
+        if self.ALPHA == 1:  # Not necessary  to compute Q for initial state
+            return r + self.GAMMA * max_q1
+        q = self.critic.get_q(s, a)
         # Bellman equation
-        return r + self.GAMMA * max_q1
+        return q + self.ALPHA * (r + self.GAMMA * max_q1 - q)
 
     def compute_batch(self, s):
         """
@@ -404,7 +410,7 @@ class ActorCritic(object):
             rb[i, :] = self.replay_memory[index][2]
             s1b[i, :] = self.replay_memory[index][3]
 
-        q_goal = self.calculate_critic_goal(rb, s1b)
+        q_goal = self.calculate_critic_goal(sb, ab, rb, s1b)
         self.critic.critic_training(sb, ab, q_goal)  # Critic training
         self.critic.actor_training(sb)  # Actor training with previous state vectors
         self.transfer_weights(self.TAU_CONST)
