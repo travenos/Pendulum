@@ -1,3 +1,2 @@
 model_checkpoint_path: "/home/alexey/PycharmProjects/Pendulum/Nets/Adaptive_critic/sess"
-all_model_checkpoint_paths: "/home/alexey/PycharmProjects/Pendulum/Nets/Adaptive_critic/sess..meta"
 all_model_checkpoint_paths: "/home/alexey/PycharmProjects/Pendulum/Nets/Adaptive_critic/sess"
