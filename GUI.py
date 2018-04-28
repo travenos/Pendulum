@@ -71,7 +71,7 @@ class MainWindow(QWidget):
         eps_discount_max = 1
         eps_discount_step = 0.000001
         eps_discount_default_value = 0.0001
-        eps_discount_decimals = 9
+        eps_discount_decimals = 6
         # Параметры поля выбора конечной вероятности выбора случайного действия
         eps_final_min = 0
         eps_final_max = 1
@@ -86,7 +86,7 @@ class MainWindow(QWidget):
         batch_size_min = 1
         batch_size_max = 300
         batch_size_step = 10
-        batch_size_default_value = 50
+        batch_size_default_value = 100
         # Размер поля вывода данных
         text_field_size = (460, 190)
 
@@ -328,7 +328,8 @@ class MainWindow(QWidget):
     
     def new_nn(self):
         """Создать новую нейросеть со случайными коэффициентами"""
-        self.sim.new_nn()
+        self.sim.new_nn()   # Создать новую нейросеть и очистить опыт
+        self.change_start_eps()  # Обновить вероятность случайного действия
     
     def load_nn(self):
         """Загрузить нейросеть из файла"""

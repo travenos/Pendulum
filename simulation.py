@@ -62,6 +62,7 @@ class PendulumLearning(object):
     def new_nn(self):
         """Инициализировать нейронную сеть случайными весами"""
         self.learning_model.reset_nn()
+        self.learning_model.clear_memory()  # Очистить опыт
 
     def start(self):
         """Запустить управление маятником"""

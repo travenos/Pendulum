@@ -430,6 +430,12 @@ class ActorCritic(object):
         """
         tf.summary.FileWriter(folder_name, self.sess.graph)
 
+    def clear_memory(self):
+        """
+        Clear replay memory
+        """
+        self.replay_memory.clear()
+
     def close_session(self):
         """
         Close TensorFlow session
