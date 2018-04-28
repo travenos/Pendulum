@@ -1,4 +1,4 @@
-# A realization of a deep actor-critic reinforcement learning algorithm
+# A realization of a deep adaptive critic reinforcement learning algorithm
 # DDPG (Deep Deterministic Policy Gradient) by Alexey Barashkov,
 # master student of Moscow Technological University (MIREA)
 import tensorflow as tf
@@ -103,9 +103,6 @@ class Critic(object):
         self.sess = sess
         self.actor = actor
 
-        self.GAMMA = 0.85  # Discount factor
-        self.ALPHA = 1  # Training rate
-
         self.lr = 0.003  # Critic's optimizer's learning rate
 
         if len(hidden_neurons) != len(activations):
@@ -187,16 +184,14 @@ class Critic(object):
             self.actor_train_op = tf.train.AdamOptimizer(
                 self.actor.lr).minimize(-self.Q, var_list=self.actor.weights+self.actor.biases)
 
-    def critic_training(self, s, a, r, s1):
+    def critic_training(self, s, a, q_goal):
         """
         Train the critic on batch of experience
         :param s: previous state vector
         :param a: action vector
-        :param r: scalar reward, received for moving to state s1
-        :param s1:  new state vector
+        :param q_goal: goals vector for critic output
+        :return: training step loss
         """
-        # s, a, r, s1 are numpy arrays
-        q_goal = self._calc_target(s, a, r, s1)  # Calculate a butch of goal values for critic
         # While training critic, actor in not connected (key=0)
         feed_dict = {self.s: s, self.Q_goal: q_goal, self.key: 0, self.a_ext: a}
         _, loss = self.sess.run([self.critic_train_op, self.loss], feed_dict)  # Train the critic with one iteration
@@ -233,21 +228,6 @@ class Critic(object):
         feed_dict = {self.s: s, self.key: 1, self.a_ext: np.zeros((s.shape[0], self.actor.ACTION_LEN))}
         return self.sess.run(self.Q, feed_dict)
 
-    def _calc_target(self, s, a, r, s1):
-        """
-        Compute Critic targets using Bellman equation
-        :param s: previous state vector
-        :param a: action vector
-        :param r: scalar reward, received for moving to state s1
-        :param s1:  new state vector
-        :return: a goal for critic
-        """
-        # s, a, r, s1 are numpy arrays
-        q = self.get_q(s, a)
-        max_q1 = self.get_max_q(s1)
-        # Bellman equation
-        return q + self.ALPHA * (r + self.GAMMA * max_q1 - q)
-
 
 class ActorCritic(object):
     """
@@ -260,12 +240,14 @@ class ActorCritic(object):
         np.random.seed(42)    # Randomizers' initialization for getting repeatable results
         tf.set_random_seed(42)
 
+        self.GAMMA = 0.85  # Discount factor
         self.replay_memory = deque(maxlen=100000)  # History
         self.EPS_GREEDY = True  # Make random actions sometimes
         self.eps = 0.5  # Initial probability of random action
         self.EPS_DISCOUNT = 0.000008334  # By this value probability of random action is decreased by every step
         self.MIN_EPS = 0.05  # Minimum probability of random action
         self.BATCH_SIZE = 50  # Size of training batch on every step
+        self.TAU_CONST = 0.1  # Weights transfer rate
 
         # Parameters for creation actor and critic models
         self.actor_param = {"state_len": state_len, "action_len": action_len, "a_bound": a_bound,
@@ -275,14 +257,42 @@ class ActorCritic(object):
         self.sess = tf.InteractiveSession()  # Starting a new TensorFlow session
         self._construct_actor_critic()  # Creating actor and critic models
         self.sess.run(tf.global_variables_initializer())
+        self.transfer_weights(1)
         self.saver = tf.train.Saver()  # TensorFlow session saver
 
     def _construct_actor_critic(self):
         """
         Creating actor and critic models and initializing variables
         """
+        # Main actor and critic networks
         self.actor = Actor(self.sess, **self.actor_param)
         self.critic = Critic(self.sess, self.actor, **self.critic_param)
+        # Target actor and critic networks
+        self.actor2 = Actor(self.sess, **self.actor_param)
+        self.critic2 = Critic(self.sess, self.actor2, **self.critic_param)
+        self.weights_transfer_ops = []  # Weights transfer operations
+        self.tau = tf.placeholder(tf.float64, (), "tau")    # Weights transfer rate placeholder
+
+        def construct_weights_transfer(net1, net2):
+            """Construct weights transfer computations for two nets"""
+            for i in range(len(net1.weights)):
+                new_weight = self.tau * net1.weights[i] + (1 - self.tau) * net2.weights[i]
+                operation = tf.assign(net2.weights[i],  new_weight)
+                self.weights_transfer_ops.append(operation)
+                new_bias = self.tau * net1.biases[i] + (1 - self.tau) * net2.biases[i]
+                operation = tf.assign(net2.biases[i], new_bias)
+                self.weights_transfer_ops.append(operation)
+
+        construct_weights_transfer(self.actor, self.actor2)
+        construct_weights_transfer(self.critic, self.critic2)
+
+    def transfer_weights(self, tau):
+        """
+        Transfer weights to target nets
+        :param tau: transfer rate
+        """
+        feed_dict = {self.tau: tau}
+        self.sess.run(self.weights_transfer_ops, feed_dict)
 
     def save_to_file(self, file_name):
         """
@@ -307,6 +317,18 @@ class ActorCritic(object):
 
     def reset_nn(self):
         self.sess.run(tf.global_variables_initializer())
+
+    def calculate_critic_goal(self, r, s1):
+        """
+        Compute Critic targets using Bellman equation
+        :param r: scalar reward, received for moving to state s1
+        :param s1:  new state vector
+        :return: goal output for critic
+        """
+        # s, a, r, s1 are numpy arrays
+        max_q1 = self.critic2.get_max_q(s1)
+        # Bellman equation
+        return r + self.GAMMA * max_q1
 
     def compute_batch(self, s):
         """
@@ -382,9 +404,10 @@ class ActorCritic(object):
             rb[i, :] = self.replay_memory[index][2]
             s1b[i, :] = self.replay_memory[index][3]
 
-        self.critic.actor_training(s1b)  # Actor training with new state vectors
-        self.critic.critic_training(sb, ab, rb, s1b)  # Critic training
+        q_goal = self.calculate_critic_goal(rb, s1b)
+        self.critic.critic_training(sb, ab, q_goal)  # Critic training
         self.critic.actor_training(sb)  # Actor training with previous state vectors
+        self.transfer_weights(self.TAU_CONST)
 
     def get_inputs_count(self):
         """

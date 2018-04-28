@@ -43,7 +43,7 @@ class MainWindow(QWidget):
         # Кнопки выбора обучающейся модели
         self.q_learning_rb = QRadioButton("Deep Q-learning", self)
         self.q_learning2_rb= QRadioButton("Q-learning, net with one output", self)
-        self.actor_critic_rb = QRadioButton("Actor-critic (DDPG)", self)
+        self.actor_critic_rb = QRadioButton("Adaptive critic (DDPG)", self)
         # Чекбоксы
         self.eps_greedy_checkbox = QCheckBox("Use random actions", self)
         self.learning_checkbox = QCheckBox("Turn training on", self)
@@ -65,12 +65,12 @@ class MainWindow(QWidget):
         eps_start_min = 0
         eps_start_max = 1
         eps_start_step = 0.1
-        eps_start_default_value = 0.5
+        eps_start_default_value = 1
         # Параметры поля выбора шага уменьшения вероятности случайного действия
         eps_discount_min = 0
         eps_discount_max = 1
         eps_discount_step = 0.000001
-        eps_discount_default_value = 0.000008334
+        eps_discount_default_value = 0.0001
         eps_discount_decimals = 9
         # Параметры поля выбора конечной вероятности выбора случайного действия
         eps_final_min = 0
@@ -254,7 +254,7 @@ class MainWindow(QWidget):
         self.output_text_field.resize(*text_field_size)
         self.output_text_field.move(buttons_left, button_up)
         self.output_text_field.setReadOnly(True)
-        self.setWindowTitle('The Reverse Pendulum')
+        self.setWindowTitle('An Inverted Pendulum')
         self.show()
 
     def closeEvent(self, event):
@@ -346,7 +346,6 @@ class MainWindow(QWidget):
                 self.sim.load_nn(filename)
             except OSError or FileNotFoundError or FileNotFoundError as e:
                 QMessageBox.warning(self, "Error", str(e))
-                # self.new_nn()
         file_dialogue.deleteLater()
     
     def save_nn(self):
@@ -355,7 +354,7 @@ class MainWindow(QWidget):
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
         if self.actor_critic_rb.isChecked():
-            name_filters = ["TensorFlow session (*.meta)"]
+            name_filters = ["TensorFlow session (*.*)"]
         else:
             name_filters = ["Hierarchical data format (*.hdf)", "All files (*.*)"]
         file_dialogue.setNameFilters(name_filters)
