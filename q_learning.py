@@ -1,6 +1,7 @@
 import numpy as np
 from keras.models import Sequential, load_model
 from keras.layers import Dense
+from keras import optimizers
 from collections import deque
 
 
@@ -9,6 +10,7 @@ class QLearningModel(object):
     def __init__(self, state_len=3, action_len=1, a_bound=2, actions=2, neurons_n=(30, 14),
                  activations=("relu", "sigmoid")):
         """Конструктор"""
+        self.lr = 0.003  # Темп обучения нейросети
         self._state_len = state_len  # Длина вектора состояния
         self._action_len = action_len  # Длина вектора действия
         self._construct_net(state_len, action_len, actions, neurons_n, activations)  # Создать нейронную сеть
@@ -54,6 +56,7 @@ class QLearningModel(object):
                 self.neuralNet.add(Dense(n, input_dim=inputs_n, kernel_initializer="normal", activation=af))
             else:
                 self.neuralNet.add(Dense(n, kernel_initializer="normal", activation=af))
+        optimizer = optimizers.adam(lr=self.lr)
         self.neuralNet.compile(loss="mean_squared_error", optimizer="adam", metrics=["mae"])   # Компилируем сеть
         # Используется метод оптимизации Adam
 
@@ -194,6 +197,10 @@ class QLearningModel(object):
         max_Q1 = max_Q1.reshape((max_Q1.size, 1))
         alpha = 1
         return Q + alpha * a_batch * (r_batch + self.GAMMA * max_Q1 - Q)
+
+    def clear_memory(self):
+        """Очистить память опыта"""
+        self.replay_memory.clear()
 
     def close_session(self):
         """Закрыть сессию (для унификации с классами, использующими TensorFlow)"""

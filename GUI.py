@@ -41,9 +41,9 @@ class MainWindow(QWidget):
         self.episode_length_spinbox = QSpinBox(self)
         self.batch_size_spinbox = QSpinBox(self)
         # Кнопки выбора обучающейся модели
-        self.q_learning_rb = QRadioButton("Deep Q-learning", self)
-        self.q_learning2_rb= QRadioButton("Q-learning, сеть с одним выходом", self)
-        self.actor_critic_rb = QRadioButton("Actor-critic (DDPG)", self)
+        self.q_learning_rb = QRadioButton("Глубокое Q-обучение", self)
+        self.q_learning2_rb= QRadioButton("Q-обучение, сеть с одним выходом", self)
+        self.actor_critic_rb = QRadioButton("Адаптивный критик (DDPG)", self)
         # Чекбоксы
         self.eps_greedy_checkbox = QCheckBox("Использовать случайные действия", self)
         self.learning_checkbox = QCheckBox("Включить обучение", self)
@@ -65,13 +65,13 @@ class MainWindow(QWidget):
         eps_start_min = 0
         eps_start_max = 1
         eps_start_step = 0.1
-        eps_start_default_value = 0.5
+        eps_start_default_value = 1
         # Параметры поля выбора шага уменьшения вероятности случайного действия
         eps_discount_min = 0
         eps_discount_max = 1
         eps_discount_step = 0.000001
-        eps_discount_default_value = 0.000008334
-        eps_discount_decimals = 9
+        eps_discount_default_value = 0.0001
+        eps_discount_decimals = 6
         # Параметры поля выбора конечной вероятности выбора случайного действия
         eps_final_min = 0
         eps_final_max = 1
@@ -86,7 +86,7 @@ class MainWindow(QWidget):
         batch_size_min = 1
         batch_size_max = 300
         batch_size_step = 10
-        batch_size_default_value = 50
+        batch_size_default_value = 100
         # Размер поля вывода данных
         text_field_size = (460, 190)
 
@@ -328,7 +328,8 @@ class MainWindow(QWidget):
     
     def new_nn(self):
         """Создать новую нейросеть со случайными коэффициентами"""
-        self.sim.new_nn()
+        self.sim.new_nn()   # Создать новую нейросеть и очистить опыт
+        self.change_start_eps()  # Обновить вероятность случайного действия
     
     def load_nn(self):
         """Загрузить нейросеть из файла"""
@@ -346,7 +347,6 @@ class MainWindow(QWidget):
                 self.sim.load_nn(filename)
             except OSError or FileNotFoundError or FileNotFoundError as e:
                 QMessageBox.warning(self, "Ошибка", str(e))
-                # self.new_nn()
         file_dialogue.deleteLater()
     
     def save_nn(self):
