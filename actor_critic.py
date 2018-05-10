@@ -1,6 +1,5 @@
 # A realization of a deep adaptive critic reinforcement learning algorithm
-# DDPG (Deep Deterministic Policy Gradient) by Alexey Barashkov,
-# master student of Moscow Technological University (MIREA)
+# by Alexey Barashkov,  master student of Moscow Technological University (MIREA)
 import tensorflow as tf
 import numpy as np
 from collections import deque
@@ -231,7 +230,7 @@ class Critic(object):
 
 class ActorCritic(object):
     """
-    Goal of this class is learning with actor and critic connected together
+    Goal of this class is learning actor and critic together
     """
     def __init__(self, state_len=3, action_len=1, a_bound=2):
         """
@@ -247,7 +246,6 @@ class ActorCritic(object):
         self.EPS_DISCOUNT = 0.000008334  # By this value probability of random action is decreased by every step
         self.MIN_EPS = 0.05  # Minimum probability of random action
         self.BATCH_SIZE = 50  # Size of training batch on every step
-        self.TAU_CONST = 0.1  # Weights transfer rate
         self.ALPHA = 1  # TD learning rate
 
         # Parameters for creation actor and critic models
@@ -255,10 +253,9 @@ class ActorCritic(object):
                             "hidden_neurons": (30, 7), "activations": (tf.nn.relu, tf.nn.sigmoid)}
         self.critic_param = {"hidden_neurons": (40, 19), "activations": (tf.nn.relu, tf.nn.sigmoid)}
 
-        self.sess = tf.InteractiveSession()  # Starting a new TensorFlow session
+        self.sess = tf.Session()  # Starting a new TensorFlow session
         self._construct_actor_critic()  # Creating actor and critic models
         self.sess.run(tf.global_variables_initializer())
-        self.transfer_weights(1)
         self.saver = tf.train.Saver()  # TensorFlow session saver
 
     def _construct_actor_critic(self):
@@ -268,32 +265,6 @@ class ActorCritic(object):
         # Main actor and critic networks
         self.actor = Actor(self.sess, **self.actor_param)
         self.critic = Critic(self.sess, self.actor, **self.critic_param)
-        # Target actor and critic networks
-        self.actor2 = Actor(self.sess, **self.actor_param)
-        self.critic2 = Critic(self.sess, self.actor2, **self.critic_param)
-        self.weights_transfer_ops = []  # Weights transfer operations
-        self.tau = tf.placeholder(tf.float64, (), "tau")    # Weights transfer rate placeholder
-
-        def construct_weights_transfer(net1, net2):
-            """Construct weights transfer computations for two nets"""
-            for i in range(len(net1.weights)):
-                new_weight = self.tau * net1.weights[i] + (1 - self.tau) * net2.weights[i]
-                operation = tf.assign(net2.weights[i],  new_weight)
-                self.weights_transfer_ops.append(operation)
-                new_bias = self.tau * net1.biases[i] + (1 - self.tau) * net2.biases[i]
-                operation = tf.assign(net2.biases[i], new_bias)
-                self.weights_transfer_ops.append(operation)
-
-        construct_weights_transfer(self.actor, self.actor2)
-        construct_weights_transfer(self.critic, self.critic2)
-
-    def transfer_weights(self, tau):
-        """
-        Transfer weights to target nets
-        :param tau: transfer rate
-        """
-        feed_dict = {self.tau: tau}
-        self.sess.run(self.weights_transfer_ops, feed_dict)
 
     def save_to_file(self, file_name):
         """
@@ -329,7 +300,7 @@ class ActorCritic(object):
         :return: goal output for critic
         """
         # s, a, r, s1 are numpy arrays
-        max_q1 = self.critic2.get_max_q(s1)
+        max_q1 = self.critic.get_max_q(s1)
         if self.ALPHA == 1:  # Not necessary  to compute Q for initial state
             return r + self.GAMMA * max_q1
         q = self.critic.get_q(s, a)
@@ -413,7 +384,6 @@ class ActorCritic(object):
         q_goal = self.calculate_critic_goal(sb, ab, rb, s1b)
         self.critic.critic_training(sb, ab, q_goal)  # Critic training
         self.critic.actor_training(sb)  # Actor training with previous state vectors
-        self.transfer_weights(self.TAU_CONST)
 
     def get_inputs_count(self):
         """
