@@ -309,7 +309,7 @@ class MainWindow(QWidget):
 
     def toggle_learning(self):
         """Производить ли обучение модели, или просто включить управление"""
-        enable = self.eps_greedy_checkbox.isChecked()
+        enable = self.learning_checkbox.isChecked()
         self.sim.is_learning = enable
 
     def save_plots(self):
