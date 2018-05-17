@@ -309,7 +309,7 @@ class MainWindow(QWidget):
 
     def toggle_learning(self):
         """Производить ли обучение модели, или просто включить управление"""
-        enable = self.eps_greedy_checkbox.isChecked()
+        enable = self.learning_checkbox.isChecked()
         self.sim.is_learning = enable
 
     def save_plots(self):
@@ -342,13 +342,8 @@ class MainWindow(QWidget):
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.ExistingFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptOpen)
-<<<<<<< HEAD
-        if self.actor_critic_rb.isChecked():
-            name_filters = ["Сессия TensorFlow (*.meta)"]
-=======
         if self.actor_critic_rb.isChecked() or self.actor_critic_DDPG_rb.isChecked():
-            name_filters = ["TensorFlow session (*.meta)"]
->>>>>>> develop
+            name_filters = ["Сессия TensorFlow (*.meta)"]
         else:
             name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
         file_dialogue.setNameFilters(name_filters)
@@ -365,13 +360,8 @@ class MainWindow(QWidget):
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
-<<<<<<< HEAD
-        if self.actor_critic_rb.isChecked():
-            name_filters = ["Сессия TensorFlow (*.*)"]
-=======
         if self.actor_critic_rb.isChecked() or self.actor_critic_DDPG_rb.isChecked():
-            name_filters = ["TensorFlow session (*.*)"]
->>>>>>> develop
+            name_filters = ["Сессия TensorFlow (*.*)"]
         else:
             name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
         file_dialogue.setNameFilters(name_filters)
