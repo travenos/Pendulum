@@ -9,8 +9,8 @@ class ActorCriticDDPG(ActorCritic):
     Goal of this class is learning actor and critic together with using of a target pair of actor and critic
     """
     def __init__(self, state_len=3, action_len=1, a_bound=2):
-        DDPG_graph = tf.Graph()
-        with DDPG_graph.as_default():
+        self.graph = tf.Graph()
+        with self.graph.as_default():
             self.TAU_CONST = 0.1  # Weights transfer rate
             super().__init__(state_len, action_len, a_bound)
             self.transfer_weights(1)
@@ -76,3 +76,7 @@ class ActorCriticDDPG(ActorCritic):
         q = self.critic.get_q(s, a)
         # Bellman equation
         return q + self.ALPHA * (r + self.GAMMA * max_q1 - q)
+
+    def reset_nn(self):
+        with self.graph.as_default():
+            super().reset_nn()
