@@ -6,6 +6,7 @@ from PyQt5 import QtWidgets
 from q_learning import QLearningModel
 from q_learning2 import QLearningModel2
 from actor_critic import ActorCritic
+from actor_critic_DDPG import ActorCriticDDPG
 
 
 class PendulumLearning(object):
@@ -20,7 +21,8 @@ class PendulumLearning(object):
         # Используемые модели
         self.learning_models_list = [QLearningModel(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND),
                                      QLearningModel2(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND),
-                                     ActorCritic(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND)]
+                                     ActorCritic(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND),
+                                     ActorCriticDDPG(state_len=self._S_LEN, action_len=1, a_bound=self._A_BOUND)]
 
         self.learning_model = self.learning_models_list[0]  # Ссылка на применяемую модель
 
@@ -44,7 +46,7 @@ class PendulumLearning(object):
         return env
 
     def choose_learning_model(self, number):
-        """Выбрать обучающуюся модель (0-2)"""
+        """Выбрать обучающуюся модель (0-3)"""
         self.learning_model = self.learning_models_list[number]
 
     def reset_env(self):

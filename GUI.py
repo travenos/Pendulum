@@ -43,7 +43,8 @@ class MainWindow(QWidget):
         # Кнопки выбора обучающейся модели
         self.q_learning_rb = QRadioButton("Глубокое Q-обучение", self)
         self.q_learning2_rb= QRadioButton("Q-обучение, сеть с одним выходом", self)
-        self.actor_critic_rb = QRadioButton("Адаптивный критик (DDPG)", self)
+        self.actor_critic_rb = QRadioButton("Адаптивный критик", self)
+        self.actor_critic_DDPG_rb = QRadioButton("Адаптивный критик (DDPG)", self)
         # Чекбоксы
         self.eps_greedy_checkbox = QCheckBox("Использовать случайные действия", self)
         self.learning_checkbox = QCheckBox("Включить обучение", self)
@@ -65,12 +66,12 @@ class MainWindow(QWidget):
         eps_start_min = 0
         eps_start_max = 1
         eps_start_step = 0.1
-        eps_start_default_value = 1
+        eps_start_default_value = 0.5
         # Параметры поля выбора шага уменьшения вероятности случайного действия
         eps_discount_min = 0
         eps_discount_max = 1
         eps_discount_step = 0.000001
-        eps_discount_default_value = 0.0001
+        eps_discount_default_value = 0.00002
         eps_discount_decimals = 6
         # Параметры поля выбора конечной вероятности выбора случайного действия
         eps_final_min = 0
@@ -86,9 +87,9 @@ class MainWindow(QWidget):
         batch_size_min = 1
         batch_size_max = 300
         batch_size_step = 10
-        batch_size_default_value = 100
+        batch_size_default_value = 50
         # Размер поля вывода данных
-        text_field_size = (460, 190)
+        text_field_size = (460, 170)
 
         buttons_left = canvas_position[0] + buttons_indent + self.canvas_width  # Координата левого края блока элементов управления
         buttons_up = canvas_position[1]  # Координата верхнего края блока элементов управления
@@ -181,6 +182,9 @@ class MainWindow(QWidget):
         button_up += labels_distance
         self.actor_critic_rb.move(buttons_left, button_up)
         self.actor_critic_rb.toggled.connect(self.select_learning_model)
+        button_up += labels_distance
+        self.actor_critic_DDPG_rb.move(buttons_left, button_up)
+        self.actor_critic_DDPG_rb.toggled.connect(self.select_learning_model)
         self.select_learning_model()
         button_up += labels_distance
 
@@ -293,8 +297,10 @@ class MainWindow(QWidget):
             lm_number = 0
         elif self.q_learning2_rb.isChecked():
             lm_number = 1
-        else:
+        elif self.actor_critic_rb.isChecked():
             lm_number = 2
+        else:
+            lm_number = 3
         self.sim.choose_learning_model(lm_number)
 
     def toggle_eps_greedy(self):
@@ -336,8 +342,13 @@ class MainWindow(QWidget):
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.ExistingFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptOpen)
+<<<<<<< HEAD
         if self.actor_critic_rb.isChecked():
             name_filters = ["Сессия TensorFlow (*.meta)"]
+=======
+        if self.actor_critic_rb.isChecked() or self.actor_critic_DDPG_rb.isChecked():
+            name_filters = ["TensorFlow session (*.meta)"]
+>>>>>>> develop
         else:
             name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
         file_dialogue.setNameFilters(name_filters)
@@ -354,8 +365,13 @@ class MainWindow(QWidget):
         file_dialogue = QFileDialog()
         file_dialogue.setFileMode(QFileDialog.AnyFile)
         file_dialogue.setAcceptMode(QFileDialog.AcceptSave)
+<<<<<<< HEAD
         if self.actor_critic_rb.isChecked():
             name_filters = ["Сессия TensorFlow (*.*)"]
+=======
+        if self.actor_critic_rb.isChecked() or self.actor_critic_DDPG_rb.isChecked():
+            name_filters = ["TensorFlow session (*.*)"]
+>>>>>>> develop
         else:
             name_filters = ["Иерархический формат данных (*.hdf)", "Все файлы (*.*)"]
         file_dialogue.setNameFilters(name_filters)
