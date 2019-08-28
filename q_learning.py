@@ -181,14 +181,20 @@ class QLearningModel(object):
         if net is None:
             net = self.neuralNet
         cfg = net.get_config()
-        return cfg[0]['config']['batch_input_shape'][1]
+        try:
+            return cfg['layers'][0]['config']['batch_input_shape'][1]
+        except KeyError:
+            return cfg[0]['config']['batch_input_shape'][1]
 
     def get_outputs_count(self, net=None):
         """Количество выходов сети"""
         if net is None:
             net = self.neuralNet
         cfg = net.get_config()
-        return cfg[-1]['config']['units']
+        try:
+            return cfg['layers'][-1]['config']['units']
+        except KeyError:
+            return cfg[-1]['config']['units']
 
     def __calc_target_batch(self, s_batch, a_batch, r_batch, s1_batch):
         """Вычисление данных, подаваемых на выход нейронной сети (согласно уравнению Беллмана)"""
